@@ -59,10 +59,10 @@ public:
 
     void AddDocument(int document_id, const string& document) {
         const auto words = SplitIntoWordsNoStop(document);
-        const auto words_count = (double)words.size();
-
         for (const auto& word : words) {
-            documents_[word][document_id] = count(words.begin(), words.end(), word) / words_count;
+            if (!documents_[word].count(document_id)) {
+                documents_[word][document_id] = ComputeWordTF(word, words);
+            }
         }
         ++document_count_;
     }
@@ -133,8 +133,12 @@ private:
     }
 
     WordType GetQueryWordType(const string& query_word) const {
-        if (IsStopWord(query_word)) return WordType::kStop;
-        if (query_word[0] == '-') return WordType::kMinus;
+        if (IsStopWord(query_word)) {
+            return WordType::kStop;
+        }
+        if (query_word[0] == '-') {
+            return WordType::kMinus;
+        }
         return WordType::kPlus;
     }
 
@@ -154,13 +158,12 @@ private:
                 || query_content.words_by_type.at(WordType::kPlus).empty()) {
             return {};
         }
-        const auto document_count = (double)document_count_;
 
         map<int, double> documents_relevance;
         for (const auto& word : query_content.words_by_type.at(WordType::kPlus)) {
             if (!documents_.count(word)) continue;
 
-            const double word_idf = log(document_count / documents_.at(word).size());
+            const auto word_idf = ComputeWordIDF(word);
             for (const auto& [document_id, word_document_tf] : documents_.at(word)) {
                 documents_relevance[document_id] += word_document_tf * word_idf;
             }
@@ -170,6 +173,21 @@ private:
                                                  query_content.words_by_type.at(WordType::kMinus));
         }
         return documents_relevance;
+    }
+
+    double ComputeWordIDF(const string& word) const {
+        if (!documents_.count(word)
+                || documents_.at(word).empty()) {
+            return 0.0;
+        }
+        return log(static_cast<double>(document_count_) / documents_.at(word).size());
+    }
+
+    double static ComputeWordTF(const string& word, const vector<string>& words) {
+        if (words.empty()) {
+            return 0.0;
+        }
+        return count(words.begin(), words.end(), word) / static_cast<double>(words.size());
     }
 
     void FilterDocumentsRelevanceByMinusWords(map<int, double>& documents_relevance,
