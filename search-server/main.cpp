@@ -59,10 +59,10 @@ public:
 
     void AddDocument(int document_id, const string& document) {
         const auto words = SplitIntoWordsNoStop(document);
+
+        const double word_frequency = 1.0 / words.size();
         for (const auto& word : words) {
-            if (!documents_[word].count(document_id)) {
-                documents_[word][document_id] = ComputeWordTF(word, words);
-            }
+            documents_[word][document_id] += word_frequency;
         }
         ++document_count_;
     }
@@ -181,13 +181,6 @@ private:
             return 0.0;
         }
         return log(static_cast<double>(document_count_) / documents_.at(word).size());
-    }
-
-    double static ComputeWordTF(const string& word, const vector<string>& words) {
-        if (words.empty()) {
-            return 0.0;
-        }
-        return count(words.begin(), words.end(), word) / static_cast<double>(words.size());
     }
 
     void FilterDocumentsRelevanceByMinusWords(map<int, double>& documents_relevance,
