@@ -77,9 +77,8 @@ public:
         stop_words_ = set(stop_words.begin(), stop_words.end());
     }
 
-    explicit SearchServer(const string& text) {
-        SetStopWords(text);
-    }
+    explicit SearchServer(const string& text): 
+    SearchServer(::SplitIntoWords(text)) {}
 
 public:
     void SetStopWords(const string& text) {
@@ -88,8 +87,11 @@ public:
     }
 
     void AddDocument(int document_id, const string& raw_document, DocumentStatus status, const vector<int>& ratings) {
-        if (document_id < 0 || documents_.count(document_id)) {
+        if (document_id < 0) {
             throw invalid_argument("document id is invalid"s);
+        }
+        if (documents_.count(document_id)) {
+            throw invalid_argument("document with this id has already been added"s);
         }
 
         const auto words = SplitIntoWordsNoStop(raw_document);
@@ -160,7 +162,7 @@ public:
             throw out_of_range("document index is invalid"s);
         }
 
-        return document_ids_.at(static_cast<size_t>(index));
+        return document_ids_.at(index);
     }
 
 private:
@@ -258,7 +260,7 @@ private:
     static bool CheckWordsAreCorrect(const WordsContainer& words) {
         for (const auto& word : words) {
             for (const auto ch : word) {
-                if (ch >= 0 && ch <= 31) {
+                if (ch >= '\000' && ch <= '\037') {
                     return false;
                 }
             }
