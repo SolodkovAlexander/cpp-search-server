@@ -123,7 +123,7 @@ public:
     vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus document_status = DocumentStatus::ACTUAL) const {
         return FindTopDocuments(
             raw_query, 
-            [document_status](int /*id*/, DocumentStatus status, int /*rating*/) -> bool { return status == document_status; }
+            [document_status](int id, DocumentStatus status, int rating) -> bool { return status == document_status; }
         );
     }
 
@@ -140,7 +140,7 @@ public:
             }
         }
         if (minus_word_found || !query_content.words_by_type.count(WordType::kPlus)) {
-            return {vector<string>(), documents_.at(document_id).getStatus()};
+            return {vector<string>(), documents_.at(document_id).GetStatus()};
         }
 
         vector<string> matched_words;
@@ -150,7 +150,7 @@ public:
             }
         }
 
-        return {matched_words, documents_.at(document_id).getStatus()};
+        return {matched_words, documents_.at(document_id).GetStatus()};
     }
 
     int GetDocumentCount() const {
@@ -172,11 +172,11 @@ private:
                 status_(status),
                 rating_(ComputeAverageRating(ratings)) {}
 
-            DocumentStatus getStatus() const {
+            DocumentStatus GetStatus() const {
                 return status_;
             }
 
-            int getRating() const {
+            int GetRating() const {
                 return rating_;
             }
 
@@ -288,7 +288,7 @@ private:
         vector<Document> documents;
         documents.reserve(documents_relevance.size());
         for (const auto& [document_id, document_relevance] : documents_relevance) {
-            documents.push_back({document_id, document_relevance, documents_.at(document_id).getRating()});
+            documents.push_back({document_id, document_relevance, documents_.at(document_id).GetRating()});
         }
         return documents;
     }
@@ -307,8 +307,8 @@ private:
             const auto word_idf = ComputeWordIDF(word);
             for (const auto& [document_id, word_document_tf] : word_to_frequency_in_document_.at(word)) {
                 if (document_filter(document_id, 
-                                    documents_.at(document_id).getStatus(), 
-                                    documents_.at(document_id).getRating())) {
+                                    documents_.at(document_id).GetStatus(), 
+                                    documents_.at(document_id).GetRating())) {
                     documents_relevance[document_id] += word_document_tf * word_idf;
                 }
             }
