@@ -5,8 +5,7 @@
 using namespace std;
 
 RequestQueue::RequestQueue(const SearchServer& search_server) : 
-    search_server_(search_server), 
-    time_(0) {
+    search_server_(search_server) {
 }
 
 vector<Document> RequestQueue::AddFindRequest(const string& raw_query, 
@@ -19,4 +18,10 @@ int RequestQueue::GetNoResultRequests() const {
     return count_if(requests_.begin(), 
                     requests_.end(), 
                     [](const auto& query_result) -> bool { return query_result.is_empty; });
+}
+
+void RequestQueue::RemoveOldRequests() {
+    if (requests_.size() == kMinInDay) {
+        requests_.pop_front();
+    }
 }

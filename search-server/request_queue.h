@@ -21,30 +21,23 @@ public:
 
     int GetNoResultRequests() const;
 private:
+    const SearchServer& search_server_;
     struct QueryResult {
-        uint64_t request_time;
         bool is_empty;
     };
     std::deque<QueryResult> requests_;
-
+    
     static constexpr int kMinInDay = 1440;
-    const SearchServer& search_server_;
-    uint64_t time_;
 
-    void RefreshRequestsByTime() {
-        ++time_;
-        while (!requests_.empty() && time_ - requests_.front().request_time >= kMinInDay) {
-            requests_.pop_front();
-        }
-    }
+    void RemoveOldRequests();
 };
 
 template <typename DocumentFilter>
 std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query, 
                                                    DocumentFilter document_filter) {
-    RefreshRequestsByTime();
+    RemoveOldRequests();
 
     const auto documents = search_server_.FindTopDocuments(raw_query, document_filter);
-    requests_.push_back({time_, documents.empty()});
+    requests_.push_back({documents.empty()});
     return documents;
 }
